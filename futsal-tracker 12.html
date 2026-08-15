@@ -1,0 +1,2158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フットサル記録 / FUTSAL LOG</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;700&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --card: #181b22;
+    --border: #242830;
+    --accent: #e8f444;
+    --accent2: #44f4a0;
+    --accent3: #f46044;
+    --text: #e8eaf0;
+    --muted: #5a6070;
+    --win: #44f4a0;
+    --draw: #f4c444;
+    --loss: #f46044;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.4;
+  }
+
+  header {
+    padding: 48px 32px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-end; justify-content: space-between;
+    position: relative;
+    background: #ffffff;
+  }
+  header::after {
+    content: '';
+    position: absolute; bottom: -1px; left: 32px;
+    width: 80px; height: 2px;
+    background: var(--accent);
+  }
+  .header-title h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 6vw, 72px);
+    letter-spacing: 0.04em;
+    color: #000000;
+    line-height: 1;
+  }
+  .header-title p {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #666666;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .header-season {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    color: #888888;
+    letter-spacing: 0.1em;
+  }
+
+  .main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+    position: relative; z-index: 1;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .tab-btn {
+    background: none; border: none; color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 14px 22px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .tab-btn.active { color: #000; border-bottom-color: #000; background: #fff; }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 20px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 2px; height: 100%;
+    background: var(--accent);
+  }
+  .stat-card .label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 0.15em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stat-card .value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-card .sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    margin-top: 4px;
+  }
+  .stat-card.green::before { background: var(--accent2); }
+  .stat-card.green .value { color: var(--accent2); }
+  .stat-card.red::before { background: var(--accent3); }
+  .stat-card.red .value { color: var(--accent3); }
+  .stat-card.orange::before { background: var(--draw); }
+  .stat-card.orange .value { color: var(--draw); }
+
+  /* WIN RATE BAR */
+  .winrate-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .winrate-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.15em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .winrate-bar {
+    display: flex; height: 8px; border-radius: 1px; overflow: hidden;
+    gap: 1px;
+  }
+  .bar-win { background: var(--win); transition: width 0.8s ease; }
+  .bar-draw { background: var(--draw); transition: width 0.8s ease; }
+  .bar-loss { background: var(--loss); transition: width 0.8s ease; }
+  .winrate-legend {
+    display: flex; gap: 20px; margin-top: 10px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted);
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* SESSION LIST */
+  .sessions-list { display: flex; flex-direction: column; gap: 10px; }
+  .session-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .session-card:hover { border-color: var(--accent); background: #1e2128; }
+  .session-card.expanded { border-color: var(--accent); }
+  .session-header {
+    display: flex; align-items: center; gap: 16px;
+  }
+  .session-date {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; color: #ffffff;
+    min-width: 90px;
+  }
+  .session-pills {
+    display: flex; gap: 6px; flex-wrap: wrap; flex: 1;
+  }
+  .pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; padding: 3px 8px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 2px;
+  }
+  .pill.win { border-color: var(--win); color: var(--win); }
+  .pill.draw { border-color: var(--draw); color: var(--draw); }
+  .pill.loss { border-color: var(--loss); color: var(--loss); }
+  .session-meta {
+    display: flex; gap: 14px; align-items: center;
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted);
+    margin-left: auto;
+  }
+  .meta-stat { display: flex; align-items: center; gap: 4px; }
+  .meta-icon { opacity: 0.5; }
+  .session-detail {
+    display: none;
+    margin-top: 16px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+    animation: fadeIn 0.2s ease;
+  }
+  .session-card.expanded .session-detail { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .session-note {
+    font-size: 12px; color: #8898aa;
+    line-height: 1.7;
+    padding: 10px 12px;
+    background: #0f1115;
+    border-left: 2px solid var(--accent);
+    margin-bottom: 12px;
+  }
+  .injury-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 0.1em;
+    padding: 2px 8px;
+    background: rgba(244,96,68,0.1);
+    border: 1px solid var(--accent3);
+    color: var(--accent3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .match-results {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .match-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    background: #0f1115;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .match-chip .result { font-weight: 400; }
+  .match-chip.w { border-color: rgba(68,244,160,0.3); color: var(--win); }
+  .match-chip.d { border-color: rgba(244,196,68,0.3); color: var(--draw); }
+  .match-chip.l { border-color: rgba(244,96,68,0.3); color: var(--loss); }
+
+  /* ADD SESSION FORM */
+  .add-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 28px;
+  }
+  .add-section h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px; color: var(--accent);
+    letter-spacing: 0.05em;
+    margin-bottom: 24px;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .form-group label {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    background: #0f1115;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    border-radius: 0;
+    appearance: none;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    border-color: var(--accent);
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+  /* MATCH ENTRY */
+  .match-entry-section { margin-bottom: 20px; }
+  .match-entry-section h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .match-row {
+    display: grid;
+    grid-template-columns: 24px 54px 1fr 1fr 1fr 26px;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .match-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    text-align: right;
+  }
+  .match-row select {
+    width: 100%;
+    background: #0f1115; border: 1px solid var(--border);
+    color: var(--text); padding: 5px 3px;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    outline: none; border-radius: 0; appearance: none; cursor: pointer;
+  }
+  .match-cell {
+    display: flex; align-items: center; gap: 2px;
+  }
+  .match-cell-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; color: var(--muted);
+    letter-spacing: 0.06em; white-space: nowrap;
+  }
+  .match-cell input[type=number] {
+    flex: 1; min-width: 0;
+    background: #0f1115; border: 1px solid var(--border);
+    color: var(--text); padding: 5px 2px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 15px;
+    text-align: center; outline: none; border-radius: 0;
+  }
+  .match-cell input[type=number]:focus { border-color: var(--accent); }
+  .score-sep {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px; color: var(--muted); flex-shrink: 0;
+  }
+  .btn-add-match, .btn-remove-match {
+    background: none; border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer;
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; transition: all 0.2s;
+  }
+  .btn-add-match:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-remove-match:hover { border-color: var(--accent3); color: var(--accent3); }
+  .match-header-row {
+    display: grid;
+    grid-template-columns: 24px 54px 1fr 1fr 1fr 26px;
+    gap: 4px; margin-bottom: 4px;
+  }
+  .match-header-row span {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; color: var(--muted);
+    letter-spacing: 0.1em; text-align: center;
+  }
+
+  .btn-submit {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 0.08em;
+    padding: 14px 36px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-submit:hover { opacity: 0.88; }
+  .btn-submit:active { transform: scale(0.98); }
+
+  /* ANALYSIS */
+  .analysis-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .analysis-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; color: var(--accent);
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .analysis-card h3::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .trend-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .trend-row:last-child { border-bottom: none; }
+  .trend-date {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--muted); min-width: 80px;
+  }
+  .trend-bar-wrap { flex: 1; position: relative; }
+  .trend-bar-bg {
+    height: 6px; background: var(--border); border-radius: 1px; overflow: hidden;
+  }
+  .trend-bar-fill {
+    height: 100%; background: var(--accent); border-radius: 1px;
+    transition: width 0.6s ease;
+  }
+  .trend-value {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--text); min-width: 50px; text-align: right;
+  }
+
+  /* AI ADVICE */
+  .advice-section { margin-top: 20px; }
+  .advice-bubble {
+    background: linear-gradient(135deg, #1a1f2a 0%, #141820 100%);
+    border: 1px solid var(--accent);
+    padding: 20px 24px;
+    position: relative;
+  }
+  .advice-bubble::before {
+    content: 'AI ADVICE';
+    position: absolute; top: -1px; right: 24px;
+    background: var(--accent); color: #000;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 0.15em;
+    padding: 2px 8px;
+  }
+  .advice-text {
+    font-size: 13px; line-height: 1.8;
+    color: #b8c0cc;
+  }
+  .advice-text strong { color: var(--accent2); font-weight: 700; }
+
+  /* INJURY TIMELINE */
+  .injury-timeline { position: relative; padding-left: 24px; }
+  .injury-timeline::before {
+    content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
+    width: 1px; background: var(--border);
+  }
+  .injury-event {
+    position: relative; margin-bottom: 14px;
+  }
+  .injury-event::before {
+    content: ''; position: absolute;
+    left: -20px; top: 6px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent3);
+    border: 2px solid var(--bg);
+  }
+  .injury-event.ok::before { background: var(--win); }
+  .injury-date {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--muted); margin-bottom: 2px;
+  }
+  .injury-desc { font-size: 12px; color: #8898aa; line-height: 1.6; }
+
+  /* CHART placeholder */
+  .mini-chart {
+    display: flex; align-items: flex-end; gap: 4px;
+    height: 60px; padding: 0 4px;
+  }
+  .bar-col {
+    flex: 1; background: var(--accent);
+    opacity: 0.7;
+    border-radius: 1px 1px 0 0;
+    transition: height 0.6s ease, opacity 0.2s;
+    min-height: 2px;
+    position: relative;
+  }
+  .bar-col.loss { background: var(--loss); }
+  .bar-col:hover { opacity: 1; }
+  .bar-col .tooltip {
+    display: none;
+    position: absolute; bottom: 110%;
+    left: 50%; transform: translateX(-50%);
+    background: #000;
+    border: 1px solid var(--accent);
+    padding: 4px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; color: var(--accent);
+    white-space: nowrap; z-index: 10;
+  }
+  .bar-col:hover .tooltip { display: block; }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    header { padding: 28px 16px 18px; }
+    .main { padding: 20px 12px 60px; }
+    .session-meta { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+
+  /* SCROLL */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* EDIT MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); z-index: 100;
+    align-items: flex-start; justify-content: center;
+    overflow-y: auto; padding: 20px 12px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    width: 100%; max-width: 520px;
+    padding: 24px 20px;
+    position: relative;
+    margin: auto;
+  }
+  .modal-box h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; color: var(--accent);
+    letter-spacing: 0.05em; margin-bottom: 18px;
+  }
+  .modal-close {
+    position: absolute; top: 14px; right: 16px;
+    background: none; border: none; color: var(--muted);
+    font-size: 20px; cursor: pointer; line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .btn-save-edit {
+    background: var(--accent); color: #000;
+    border: none; font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px; letter-spacing: 0.08em;
+    padding: 10px 24px; cursor: pointer;
+  }
+  .btn-delete {
+    background: none; border: 1px solid var(--accent3);
+    color: var(--accent3); font-family: 'DM Mono', monospace;
+    font-size: 11px; padding: 10px 16px; cursor: pointer;
+    margin-left: auto;
+  }
+  .btn-delete:hover { background: rgba(244,96,68,0.1); }
+  .edit-match-rows { margin-bottom: 12px; }
+  .backup-bar {
+    background: #0f1115;
+    border-bottom: 1px solid var(--border);
+    padding: 6px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+  .backup-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; }
+  .backup-dot.ok { background: var(--win); }
+  .backup-dot.warn { background: var(--draw); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">
+    <h1>FUTSAL LOG</h1>
+    <p>Personal Performance Tracker — 2025 Season</p>
+  </div>
+  <div class="header-season" id="season-range">JAN – MAY 2025</div>
+</header>
+
+<div class="backup-bar" id="backup-bar">
+  <span><span class="backup-dot" id="backup-dot"></span><span id="backup-status">バックアップ確認中...</span></span>
+  <button onclick="exportData()" style="background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;padding:3px 10px;cursor:pointer;letter-spacing:0.08em">⬇ BACKUP</button>
+</div>
+<div class="main">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('overview')">OVERVIEW</button>
+    <button class="tab-btn" onclick="switchTab('sessions')">SESSIONS</button>
+    <button class="tab-btn" onclick="switchTab('add')">+ ADD</button>
+    <button class="tab-btn" onclick="switchTab('analysis')">ANALYSIS</button>
+    <button class="tab-btn" onclick="switchTab('data')">DATA</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="winrate-section" id="winrate-section"></div>
+    <div id="overview-chart"></div>
+  </div>
+
+  <!-- SESSIONS -->
+  <div class="tab-panel" id="tab-sessions">
+    <div class="sessions-list" id="sessions-list"></div>
+  </div>
+
+  <!-- ADD SESSION -->
+  <div class="tab-panel" id="tab-add">
+    <div class="add-section">
+      <h2>NEW SESSION</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="inp-date">
+        </div>
+        <div class="form-group">
+          <label>Label (任意)</label>
+          <input type="text" id="inp-label" placeholder="">
+        </div>
+      </div>
+      <div class="match-entry-section">
+        <h3>MATCH RESULTS — 結果 / 得点 / アシスト</h3>
+        <div id="match-rows"></div>
+        <button class="btn-add-match" onclick="addMatchRow()">＋</button>
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label>Note / Injury</label>
+        <textarea id="inp-note" placeholder="コンディション、怪我、気づきなど…"></textarea>
+      </div>
+      <button class="btn-submit" onclick="submitSession()">SAVE SESSION</button>
+      <div id="save-msg" style="display:none;font-family:'DM Mono',monospace;font-size:11px;color:var(--win);margin-top:12px;">✓ Saved!</div>
+    </div>
+  </div>
+
+  <!-- ANALYSIS -->
+  <div class="tab-panel" id="tab-analysis">
+    <div id="analysis-content"></div>
+  </div>
+
+  <!-- DATA TAB -->
+  <div class="tab-panel" id="tab-data">
+    <div style="background:var(--card);border:1px solid var(--border);padding:24px;margin-bottom:16px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);margin-bottom:16px">DATA BACKUP</div>
+      <div id="backup-info" style="font-family:'DM Mono',monospace;font-size:11px;padding:10px 14px;background:#0a0c10;border:1px solid var(--border);margin-bottom:16px;line-height:1.8;color:var(--muted)">確認中...</div>
+      <p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:16px">
+        LocalStorageに保存されているデータを確認・コピーできます。<br>
+        このJSONをコピーして保存しておくとデータの復元が可能です。
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <button onclick="showStorageData()" style="background:var(--accent);color:#000;border:none;font-family:'Bebas Neue',sans-serif;font-size:16px;padding:10px 20px;cursor:pointer">VIEW DATA</button>
+        <button onclick="copyStorageData()" style="background:none;border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;padding:10px 16px;cursor:pointer">COPY JSON</button>
+        <button onclick="exportData()" style="background:none;border:1px solid var(--accent2);color:var(--accent2);font-family:'DM Mono',monospace;font-size:11px;padding:10px 16px;cursor:pointer">DOWNLOAD</button>
+      </div>
+      <div id="data-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2);margin-bottom:12px;min-height:20px"></div>
+      <textarea id="data-view" readonly style="width:100%;height:200px;background:#0a0c10;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;padding:12px;resize:vertical;outline:none;line-height:1.5" placeholder="VIEW DATAボタンを押してください"></textarea>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);padding:24px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent3);margin-bottom:16px">RESTORE DATA</div>
+      <p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:16px">
+        バックアップしたJSONを貼り付けてデータを復元できます。
+      </p>
+      <textarea id="data-import" style="width:100%;height:150px;background:#0a0c10;border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:10px;padding:12px;resize:vertical;outline:none;line-height:1.5" placeholder="JSONをここに貼り付け"></textarea>
+      <div style="margin-top:12px">
+        <button onclick="importData()" style="background:var(--accent3);color:#fff;border:none;font-family:'Bebas Neue',sans-serif;font-size:16px;padding:10px 20px;cursor:pointer">RESTORE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeEditModal()">×</button>
+    <h2>EDIT SESSION</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="edit-date">
+      </div>
+      <div class="form-group">
+        <label>Label</label>
+        <input type="text" id="edit-label">
+      </div>
+    </div>
+    <div class="match-entry-section">
+      <h3>MATCH RESULTS — 結果 / 得点 / アシスト</h3>
+      <div class="match-header-row">
+        <span></span><span>結果</span><span>SCORE</span><span>G</span><span>A</span><span></span>
+      </div>
+      <div class="edit-match-rows" id="edit-match-rows"></div>
+      <button class="btn-add-match" onclick="addEditMatchRow()" style="margin-top:8px">＋</button>
+    </div>
+    <div class="form-group" style="margin-top:16px;margin-bottom:4px">
+      <label>Note / Injury</label>
+      <textarea id="edit-note" style="min-height:70px;width:100%;background:#0f1115;border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:10px;outline:none;resize:vertical;line-height:1.6"></textarea>
+    </div>
+    <div class="form-grid" style="margin-top:12px">
+      <div class="form-group">
+        <label>Total Goals (自動集計 or 手動)</label>
+        <input type="number" id="edit-goals" min="0" style="width:100%;background:#0f1115;border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:8px;outline:none">
+      </div>
+      <div class="form-group">
+        <label>Total Assists (自動集計 or 手動)</label>
+        <input type="number" id="edit-assists" min="0" style="width:100%;background:#0f1115;border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:8px;outline:none">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save-edit" onclick="saveEdit()">SAVE</button>
+      <button class="btn-delete" onclick="deleteSession()">DELETE SESSION</button>
+    </div>
+  </div>
+</div>
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const initData = [
+  {
+    id: 1, date: "2026-01-12", label: "初蹴り",
+    wins: 6, draws: 2, losses: 1, goals: 9, assists: 2,
+    matches: [{r:'d',gs:0,ga:0,myg:0,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'d',gs:0,ga:0,myg:0,mya:0},{r:'l',gs:0,ga:0,myg:1,mya:1},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:0,mya:0},{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'w',gs:0,ga:0,myg:3,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:1}],
+    note: "ママチャリグランプリ後だが足は快調。地面蹴って右足膝内側が痛い",
+    injury: "右膝内側 軽度"
+  },
+  {
+    id: 2, date: "2026-01-17", label: "",
+    wins: 4, draws: 1, losses: 1, goals: 9, assists: 4,
+    matches: [{r:'d',gs:0,ga:0,myg:1,mya:1},{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'l',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:0,mya:2},{r:'w',gs:0,ga:0,myg:0,mya:0},{r:'w',gs:0,ga:0,myg:6,mya:0}],
+    note: "先週痛めた右膝内側が痛い",
+    injury: "右膝内側 継続"
+  },
+  {
+    id: 3, date: "2026-01-24", label: "キコ後",
+    wins: 5, draws: 1, losses: 0, goals: 9, assists: 2,
+    matches: [{r:'w',gs:0,ga:0,myg:1,mya:2},{r:'w',gs:0,ga:0,myg:3,mya:0},{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'d',gs:0,ga:0,myg:2,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:0,mya:0}],
+    note: "やや二日酔い。右足が全体的に思い。右膝裏痛は緩和",
+    injury: "右膝 緩和傾向"
+  },
+  {
+    id: 4, date: "2026-01-31", label: "",
+    wins: 5, draws: 0, losses: 1, goals: 6, assists: 3,
+    matches: [{r:'w',gs:0,ga:0,myg:0,mya:0},{r:'w',gs:0,ga:0,myg:2,mya:1},{r:'l',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'w',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:1,mya:1}],
+    note: "右膝痛い。ストレッチのとき捻らないよう注意",
+    injury: "右膝 継続"
+  },
+  {
+    id: 5, date: "2026-02-20", label: "",
+    wins: 4, draws: 1, losses: 1, goals: 2, assists: 6,
+    matches: [{r:'d',gs:0,ga:0,myg:0,mya:0},{r:'l',gs:0,ga:0,myg:0,mya:2},{r:'w',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:2,mya:1},{r:'w',gs:0,ga:0,myg:0,mya:1}],
+    note: "右膝痛い。安静が必要",
+    injury: "右膝 要安静"
+  },
+  {
+    id: 6, date: "2026-03-20", label: "雨",
+    wins: 5, draws: 1, losses: 2, goals: 6, assists: 3,
+    matches: [{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'l',gs:0,ga:0,myg:0,mya:0},{r:'d',gs:0,ga:0,myg:0,mya:0},{r:'l',gs:0,ga:0,myg:2,mya:0},{r:'w',gs:0,ga:0,myg:0,mya:2},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:1,mya:0}],
+    note: "膝の痛みは緩和もまだ強いシュートは厳禁",
+    injury: "右膝 回復中・強シュート禁止"
+  },
+  {
+    id: 7, date: "2026-03-28", label: "",
+    wins: 4, draws: 1, losses: 1, goals: 8, assists: 2,
+    matches: [{r:'w',gs:0,ga:0,myg:0,mya:0},{r:'d',gs:0,ga:0,myg:2,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:3,mya:2},{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'l',gs:0,ga:0,myg:0,mya:0}],
+    note: "無理目なパスやシュートをするとまだ痛いが膝内側というよりそれをかばう太もも前内側の筋肉。引き続き無理しない",
+    injury: "太もも前内側（庇い）"
+  },
+  {
+    id: 8, date: "2026-04-04", label: "",
+    wins: 5, draws: 0, losses: 1, goals: 6, assists: 3,
+    matches: [{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'l',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:2,mya:1}],
+    note: "まだ強く蹴ると痛みあり。それ以外はほぼほぼ戻ってきた。油断は禁物",
+    injury: "右膝 軽度残存"
+  },
+  {
+    id: 9, date: "2026-04-11", label: "",
+    wins: 6, draws: 0, losses: 0, goals: 11, assists: 6,
+    matches: [{r:'w',gs:0,ga:0,myg:1,mya:3},{r:'w',gs:0,ga:0,myg:3,mya:0},{r:'w',gs:0,ga:0,myg:2,mya:1},{r:'w',gs:0,ga:0,myg:1,mya:1},{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'w',gs:0,ga:0,myg:2,mya:1}],
+    note: "膝下の力だけで強く蹴ると痛い。まだ要注意。",
+    injury: "右膝 軽度残存"
+  },
+  {
+    id: 10, date: "2026-04-25", label: "サミット明けリハビリ",
+    wins: 0, draws: 0, losses: 0, goals: 0, assists: 0,
+    matches: [],
+    note: "やる前から右腿うら痛いので軽く。4/29は大会",
+    injury: "右腿裏 新たな痛み"
+  },
+  {
+    id: 11, date: "2026-04-29", label: "大会",
+    wins: 3, draws: 1, losses: 2, goals: 6, assists: 1,
+    matches: [{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'d',gs:0,ga:0,myg:1,mya:0},{r:'l',gs:0,ga:0,myg:0,mya:1},{r:'l',gs:0,ga:0,myg:0,mya:0}],
+    note: "右脚腿裏はやや痛みあり。",
+    injury: "右腿裏 継続"
+  },
+  {
+    id: 12, date: "2026-05-09", label: "",
+    wins: 6, draws: 1, losses: 1, goals: 9, assists: 9,
+    matches: [{r:'l',gs:0,ga:0,myg:0,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:2},{r:'d',gs:0,ga:0,myg:0,mya:0},{r:'w',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:4,mya:1},{r:'w',gs:0,ga:0,myg:0,mya:2},{r:'w',gs:0,ga:0,myg:2,mya:2},{r:'w',gs:0,ga:0,myg:2,mya:1}],
+    note: "右足の股関節痛い。膝内側はまだ強く蹴ると違和感あり",
+    injury: "右股関節 / 膝内側 違和感"
+  },
+  {
+    id: 13, date: "2026-05-17", label: "",
+    wins: 5, draws: 1, losses: 0, goals: 5, assists: 3,
+    matches: [{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:0,mya:2},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:1},{r:'d',gs:0,ga:0,myg:1,mya:0}],
+    note: "右足腿裏の張り。つりぎみ。",
+    injury: "右腿裏 張り・つり気味"
+  },
+  {
+    id: 14, date: "2026-05-24", label: "",
+    wins: 5, draws: 1, losses: 0, goals: 4, assists: 5,
+    matches: [{r:'d',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:2,mya:0},{r:'w',gs:0,ga:0,myg:0,mya:1},{r:'w',gs:0,ga:0,myg:1,mya:2},{r:'w',gs:0,ga:0,myg:0,mya:0},{r:'w',gs:0,ga:0,myg:1,mya:1}],
+    note: "右腿の裏の張りはなし。",
+    injury: "回復"
+  },
+  {
+    id: 15, date: "2026-05-31", label: "寝坊でアップ不足",
+    wins: 8, draws: 0, losses: 0, goals: 4, assists: 3,
+    matches: [
+      {r:'w',gs:2,ga:0,myg:0,mya:0},
+      {r:'w',gs:5,ga:0,myg:0,mya:2},
+      {r:'w',gs:5,ga:1,myg:2,mya:0},
+      {r:'w',gs:2,ga:1,myg:0,mya:0},
+      {r:'w',gs:1,ga:0,myg:0,mya:0},
+      {r:'w',gs:2,ga:0,myg:1,mya:1},
+      {r:'w',gs:2,ga:1,myg:1,mya:0},
+      {r:'w',gs:1,ga:0,myg:0,mya:0}
+    ],
+    note: "右腿の張りはなし",
+    injury: ""
+  },
+  {
+    id: 16, date: "2026-06-07", label: "",
+    wins: 4, draws: 0, losses: 2, goals: 4, assists: 4,
+    matches: [
+      {r:'w',gs:3,ga:1,myg:1,mya:0},
+      {r:'w',gs:3,ga:2,myg:1,mya:2},
+      {r:'l',gs:2,ga:3,myg:0,mya:0},
+      {r:'w',gs:5,ga:0,myg:2,mya:1},
+      {r:'w',gs:2,ga:0,myg:0,mya:1},
+      {r:'l',gs:0,ga:3,myg:0,mya:0}
+    ],
+    note: "右足脛横と脹脛の痛み。左腰も少し痛い。シュートが入らず、ボールも足につかない",
+    injury: "右脛横・脹脛 痛み / 左腰 痛み"
+  },
+  // ── 2025 追加分 ──────────────────────────────────────────────
+  {
+    id: 101, date: "2025-01-05", label: "2面7チーム",
+    wins: 8, draws: 0, losses: 1, goals: 10, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:1,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 102, date: "2025-01-13", label: "2面6チーム",
+    wins: 4, draws: 2, losses: 2, goals: 5, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0}],
+    note: "右足の脛横の張り。それ以外は痛みなし。", injury: "右脛横 張り"
+  },
+  {
+    id: 103, date: "2025-01-17", label: "2面8チーム",
+    wins: 2, draws: 1, losses: 3, goals: 4, assists: 0,
+    matches: [{r:'l',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'l',gs:0,ga:0}],
+    note: "寝不足でいつもより疲れる", injury: ""
+  },
+  {
+    id: 104, date: "2025-02-01", label: "2面8チーム 晴れ",
+    wins: 5, draws: 1, losses: 0, goals: 7, assists: 0,
+    matches: [{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:2,ga:0}],
+    note: "右足脛と左膝横の痛み", injury: "右脛・左膝横 痛み"
+  },
+  {
+    id: 105, date: "2025-02-08", label: "2面8チーム 晴れ",
+    wins: 3, draws: 1, losses: 2, goals: 3, assists: 0,
+    matches: [{r:'l',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "右脛の痛みからかふくらはぎも痛む", injury: "右脛・ふくらはぎ 痛み"
+  },
+  {
+    id: 106, date: "2025-02-22", label: "新しい靴初戦 晴れ",
+    wins: 6, draws: 0, losses: 2, goals: 5, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0}],
+    note: "早く出たのに駐車場が開かずに遅れる。右足裏の外側が痛い", injury: "右足裏外側 痛み"
+  },
+  {
+    id: 107, date: "2025-03-02", label: "くもり インソール変更",
+    wins: 4, draws: 1, losses: 1, goals: 7, assists: 0,
+    matches: [{r:'l',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0}],
+    note: "O脚用インソール変えた→ダメでシダスに戻す。足の痛みか、狙ったところに蹴れない", injury: "足の痛み 継続"
+  },
+  {
+    id: 108, date: "2025-03-08", label: "曇り 寒い",
+    wins: 4, draws: 2, losses: 3, goals: 2, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'d',gs:0,ga:0}],
+    note: "変えたインソールはGood。延長含め1:1をことごとく外す", injury: ""
+  },
+  {
+    id: 109, date: "2025-03-23", label: "晴れ 出張戻り翌日",
+    wins: 4, draws: 1, losses: 1, goals: 6, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'d',gs:2,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:1,ga:0}],
+    note: "引き続き決定力が低い。くるぶし側のキックの感覚を養う必要あり", injury: ""
+  },
+  {
+    id: 110, date: "2025-03-30", label: "晴れ",
+    wins: 2, draws: 2, losses: 2, goals: 2, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'d',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0}],
+    note: "右足すね痛い。くるぶし側のキックが狙ったところにいかない。プレースタイルの変更も必要か", injury: "右足すね 痛み"
+  },
+  {
+    id: 111, date: "2025-04-05", label: "晴れ",
+    wins: 4, draws: 2, losses: 0, goals: 6, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:2,ga:0}],
+    note: "シュートは前体重！守りにも戻る。前体重と力を抜く気持ちが奏功", injury: ""
+  },
+  {
+    id: 112, date: "2025-04-12", label: "晴れ",
+    wins: 6, draws: 0, losses: 0, goals: 7, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0}],
+    note: "前体重のシュートの意識。後ろ体重の時のシュートは力が入らない", injury: ""
+  },
+  {
+    id: 113, date: "2025-04-19", label: "晴れ",
+    wins: 4, draws: 0, losses: 2, goals: 2, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0}],
+    note: "寝不足でやや疲れ。右足膝も少し痛い。疲れた時にどうプレーできるか", injury: "右膝 軽度"
+  },
+  {
+    id: 114, date: "2025-04-26", label: "晴れ",
+    wins: 4, draws: 1, losses: 1, goals: 3, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "右から突破した時は逆サイドに当てる気で打たないと毎回キーパーの正面にいってしまう", injury: ""
+  },
+  {
+    id: 115, date: "2025-05-03", label: "",
+    wins: 4, draws: 2, losses: 0, goals: 5, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0}],
+    note: "右足ふくらはぎの張り。最後は力が抜けて程よい。逆サイドネットへのパスの意識が良いか", injury: "右ふくらはぎ 張り"
+  },
+  {
+    id: 116, date: "2025-05-11", label: "",
+    wins: 3, draws: 1, losses: 2, goals: 2, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'d',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:1,ga:0}],
+    note: "パスが合わない、シュート入らない。負ける試合でのゲームの作り方に課題。守備から入る", injury: ""
+  },
+  {
+    id: 117, date: "2025-05-16", label: "吉祥寺",
+    wins: 0, draws: 0, losses: 0, goals: 0, assists: 0,
+    matches: [],
+    note: "コート狭いのとレベルはついていけるが金夜は疲れる。この後ものもらいに", injury: ""
+  },
+  {
+    id: 118, date: "2025-05-25", label: "曇雨 10人のみ",
+    wins: 0, draws: 0, losses: 0, goals: 0, assists: 0,
+    matches: [],
+    note: "ほぼ勝ちのはず", injury: ""
+  },
+  {
+    id: 119, date: "2025-06-01", label: "晴れ",
+    wins: 7, draws: 0, losses: 0, goals: 8, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0}],
+    note: "力が抜けてゴール前でアウトサイド使うなど余裕あり。右足の腿前と裏のマッサージが良いかも", injury: ""
+  },
+  {
+    id: 120, date: "2025-06-07", label: "寝坊遅刻 26.5℃",
+    wins: 5, draws: 0, losses: 0, goals: 5, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0}],
+    note: "キーパー飛び出しと接触して左足くるぶし痛める。気をつける", injury: "左くるぶし 打撲"
+  },
+  {
+    id: 121, date: "2025-06-14", label: "曇り",
+    wins: 6, draws: 0, losses: 3, goals: 10, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:1,ga:0},{r:'w',gs:3,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 122, date: "2025-06-21", label: "晴れ 26-28℃",
+    wins: 6, draws: 0, losses: 0, goals: 8, assists: 0,
+    matches: [{r:'w',gs:3,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0}],
+    note: "足の痛みが少なく冷静にやれている", injury: ""
+  },
+  {
+    id: 123, date: "2025-06-29", label: "2面6チーム",
+    wins: 4, draws: 0, losses: 4, goals: 7, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:1,ga:0}],
+    note: "後半クソ", injury: ""
+  },
+  {
+    id: 124, date: "2025-07-05", label: "",
+    wins: 5, draws: 0, losses: 1, goals: 7, assists: 0,
+    matches: [{r:'w',gs:4,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0}],
+    note: "暑い。足の痛みは最初の試合の右足足裏くらい", injury: "右足裏 軽度"
+  },
+  {
+    id: 125, date: "2025-07-13", label: "東八道路規制で遅れ",
+    wins: 5, draws: 1, losses: 1, goals: 10, assists: 0,
+    matches: [{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:5,ga:0}],
+    note: "引き続き右足裏の痛みくらい。足ぶつかって右脛痛める", injury: "右足裏・右脛 痛み"
+  },
+  {
+    id: 126, date: "2025-07-27", label: "ゆるサル",
+    wins: 0, draws: 0, losses: 0, goals: 0, assists: 0,
+    matches: [],
+    note: "ゆるサル", injury: ""
+  },
+  {
+    id: 127, date: "2025-08-02", label: "寝坊遅刻",
+    wins: 2, draws: 2, losses: 1, goals: 4, assists: 0,
+    matches: [{r:'l',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:3,ga:0}],
+    note: "1試合目の右足裏の外側痛み。久しぶりで感覚が低い", injury: "右足裏外側 痛み"
+  },
+  {
+    id: 128, date: "2025-08-11", label: "",
+    wins: 4, draws: 0, losses: 2, goals: 3, assists: 0,
+    matches: [{r:'l',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:1,ga:0}],
+    note: "翌日から右膝内側が痛い", injury: "右膝内側 翌日発症"
+  },
+  {
+    id: 129, date: "2025-08-16", label: "",
+    wins: 4, draws: 2, losses: 0, goals: 2, assists: 0,
+    matches: [{r:'d',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "左足の付け根が前半から痛む。後半はやや痛みなくなる", injury: "左足付け根 痛み"
+  },
+  {
+    id: 130, date: "2025-08-23", label: "2面6チーム",
+    wins: 5, draws: 2, losses: 1, goals: 6, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'l',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "今季1番の暑さかも。途中で左脚腿裏をつったので退席", injury: "左腿裏 つり 退席"
+  },
+  {
+    id: 131, date: "2025-08-31", label: "2面8チーム",
+    wins: 3, draws: 3, losses: 0, goals: 6, assists: 0,
+    matches: [{r:'d',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'d',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0}],
+    note: "今季1番の暑さ。多少左足の前もも付け根が痛い", injury: "左前もも付け根 痛み"
+  },
+  {
+    id: 132, date: "2025-09-07", label: "2面8チーム",
+    wins: 4, draws: 0, losses: 2, goals: 6, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:2,ga:0}],
+    note: "多少暑さは和らぐ。寝てる時に攣った両足ふくらはぎはなんとか無事", injury: "両ふくらはぎ つり気味"
+  },
+  {
+    id: 133, date: "2025-09-13", label: "2面8チーム 小雨",
+    wins: 4, draws: 1, losses: 1, goals: 9, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:2,ga:0},{r:'l',gs:1,ga:0}],
+    note: "ようやく涼しくなってきたが、味方が疲れすぎている", injury: ""
+  },
+  {
+    id: 134, date: "2025-09-20", label: "",
+    wins: 4, draws: 1, losses: 1, goals: 4, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "ようやく涼しい。右足ふくらはぎの張り", injury: "右ふくらはぎ 張り"
+  },
+  {
+    id: 135, date: "2025-09-28", label: "出張前 怪我注意",
+    wins: 4, draws: 1, losses: 1, goals: 6, assists: 0,
+    matches: [{r:'d',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:2,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0}],
+    note: "ロングシュート決まる。足の痛みはあまりないが首後頭部の張りで寝不足", injury: "首後頭部 張り"
+  },
+  {
+    id: 136, date: "2025-10-05", label: "",
+    wins: 3, draws: 1, losses: 2, goals: 4, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'w',gs:2,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0}],
+    note: "出張明けで疲れ？ピッチが濡れており右足ふくらはぎ張る", injury: "右ふくらはぎ 張り"
+  },
+  {
+    id: 137, date: "2025-10-13", label: "2面7チーム",
+    wins: 7, draws: 0, losses: 1, goals: 4, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0}],
+    note: "幼稚園の運動会後で太もも裏の張りあり", injury: "太もも裏 張り"
+  },
+  {
+    id: 138, date: "2025-10-18", label: "2面6チーム",
+    wins: 6, draws: 1, losses: 1, goals: 7, assists: 0,
+    matches: [{r:'l',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0}],
+    note: "味方と合わないとイライラ。右足ふくらはぎ痛い", injury: "右ふくらはぎ 痛み"
+  },
+  {
+    id: 139, date: "2025-11-02", label: "2面8チーム 霜でスリッピー",
+    wins: 2, draws: 0, losses: 4, goals: 7, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'l',gs:3,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0}],
+    note: "2週ぶりで守備のミスもシュートミスも多い", injury: ""
+  },
+  {
+    id: 140, date: "2025-11-15", label: "2面8チーム",
+    wins: 6, draws: 0, losses: 0, goals: 6, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "腰、おしり、ふくらはぎのマッサージにより足の痛みはそこまでなく", injury: ""
+  },
+  {
+    id: 141, date: "2025-11-22", label: "2面8チーム",
+    wins: 4, draws: 2, losses: 0, goals: 6, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:2,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "アップが足りず右足腿裏と脛横痛い。ふくらはぎはそこまで痛みなし", injury: "右腿裏・脛横 痛み（アップ不足）"
+  },
+  {
+    id: 142, date: "2025-11-30", label: "",
+    wins: 5, draws: 0, losses: 1, goals: 7, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "左脚の股関節と右足脛横の痛み", injury: "左股関節・右脛横 痛み"
+  },
+  {
+    id: 143, date: "2025-12-07", label: "霜降り",
+    wins: 3, draws: 3, losses: 2, goals: 5, assists: 0,
+    matches: [{r:'d',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'l',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "先週左脚首を痛めてるっぽく、それを庇うため左脚股関節に負担", injury: "左足首・左股関節 庇い"
+  },
+  {
+    id: 144, date: "2025-12-13", label: "発表会早退",
+    wins: 4, draws: 1, losses: 1, goals: 5, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'l',gs:0,ga:0}],
+    note: "発表会のため早退。左足の痛みは緩和。寒くて体動かない", injury: "左足 緩和"
+  },
+  {
+    id: 145, date: "2025-12-19", label: "",
+    wins: 8, draws: 0, losses: 0, goals: 3, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "味方に恵まれて全勝。左脚付け根にやや違和感", injury: "左脚付け根 違和感"
+  },
+  {
+    id: 146, date: "2025-12-30", label: "蹴り納め",
+    wins: 3, draws: 2, losses: 2, goals: 10, assists: 0,
+    matches: [{r:'l',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'l',gs:1,ga:0},{r:'d',gs:2,ga:0},{r:'w',gs:2,ga:0}],
+    note: "チームメンバーに恵まれず。そうくんに初戦4点決められる。左脚の付け根と腰の痛み", injury: "左脚付け根・腰 痛み"
+  },
+  // ── 2024 ──────────────────────────────────────────────────────
+  {
+    id: 201, date: "2024-01-05", label: "2面8チーム",
+    wins: 3, draws: 2, losses: 1, goals: 8, assists: 0,
+    matches: [{r:'d',gs:1,ga:0},{r:'l',gs:1,ga:0},{r:'w',gs:3,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 202, date: "2024-01-14", label: "1面4チーム",
+    wins: 4, draws: 1, losses: 1, goals: 4, assists: 0,
+    matches: [{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0}],
+    note: "1試合目は助っ人", injury: ""
+  },
+  {
+    id: 203, date: "2024-01-28", label: "2面8チーム",
+    wins: 5, draws: 0, losses: 1, goals: 2, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 204, date: "2024-02-04", label: "2面6チーム 雨",
+    wins: 6, draws: 1, losses: 0, goals: 10, assists: 0,
+    matches: [{r:'d',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:4,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:2,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 205, date: "2024-02-11", label: "2面6チーム 晴れ",
+    wins: 5, draws: 1, losses: 2, goals: 7, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 206, date: "2024-02-18", label: "2面7チーム 晴れ",
+    wins: 3, draws: 2, losses: 3, goals: 5, assists: 0,
+    matches: [{r:'l',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:2,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 207, date: "2024-02-24", label: "2面8チーム 晴れ",
+    wins: 3, draws: 0, losses: 3, goals: 5, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 208, date: "2024-03-03", label: "2面8チーム",
+    wins: 5, draws: 2, losses: 2, goals: 10, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'l',gs:1,ga:0},{r:'d',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:2,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 209, date: "2024-03-09", label: "2面6チーム 晴れ",
+    wins: 5, draws: 2, losses: 1, goals: 5, assists: 0,
+    matches: [{r:'d',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:1,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 210, date: "2024-03-17", label: "2面7チーム",
+    wins: 5, draws: 1, losses: 2, goals: 3, assists: 0,
+    matches: [{r:'l',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 211, date: "2024-03-23", label: "2面6チーム 雪雨",
+    wins: 4, draws: 2, losses: 2, goals: 6, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'d',gs:1,ga:0},{r:'l',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 212, date: "2024-04-07", label: "1面4チーム 曇り雨上がり",
+    wins: 4, draws: 2, losses: 0, goals: 1, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 213, date: "2024-04-14", label: "1面4チーム 晴れ",
+    wins: 5, draws: 0, losses: 1, goals: 3, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 214, date: "2024-04-20", label: "2面7チーム",
+    wins: 5, draws: 2, losses: 1, goals: 5, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:3,ga:0}],
+    note: "腰が痛くて体が重い。抜けない時は運んでかわしてパスでリズムを作る", injury: "腰 痛み"
+  },
+  {
+    id: 215, date: "2024-04-28", label: "2面5チーム",
+    wins: 2, draws: 0, losses: 2, goals: 0, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 216, date: "2024-05-05", label: "2面7チーム",
+    wins: 5, draws: 2, losses: 1, goals: 3, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'l',gs:0,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 217, date: "2024-05-11", label: "2面8チーム",
+    wins: 3, draws: 2, losses: 1, goals: 3, assists: 0,
+    matches: [{r:'d',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "前より体は動かないので、仕掛けるのはゴール前のプレーに集中", injury: ""
+  },
+  {
+    id: 218, date: "2024-05-19", label: "2面6チーム 曇り",
+    wins: 4, draws: 2, losses: 2, goals: 8, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:3,ga:0}],
+    note: "腰の痛みはないが脛横が痛い。つま先側で蹴れるよう練習が必要", injury: "脛横 痛み"
+  },
+  {
+    id: 219, date: "2024-05-26", label: "2面4チーム 曇り時々晴れ",
+    wins: 6, draws: 1, losses: 0, goals: 10, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 220, date: "2024-06-02", label: "2面7チーム 曇り",
+    wins: 5, draws: 1, losses: 2, goals: 8, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'l',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0}],
+    note: "右足すね痛くて指痺れる", injury: "右足すね痛み・指しびれ"
+  },
+  {
+    id: 221, date: "2024-06-09", label: "2面8チーム 曇り",
+    wins: 3, draws: 0, losses: 3, goals: 4, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'l',gs:2,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:2,ga:0}],
+    note: "股関節から腸腰筋が痛い。右足しびれは緩和。薬指が痺れる", injury: "股関節・腸腰筋 痛み / 右足薬指しびれ"
+  },
+  {
+    id: 222, date: "2024-06-16", label: "1面4チーム 曇り",
+    wins: 4, draws: 1, losses: 1, goals: 2, assists: 0,
+    matches: [{r:'d',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "腰と股関節の痛みはなし。右足の足首・脛横とアキレス腱の痛み", injury: "右足首・脛横・アキレス腱 痛み"
+  },
+  {
+    id: 223, date: "2024-06-22", label: "2面8チーム 晴れ",
+    wins: 5, draws: 0, losses: 1, goals: 8, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:3,ga:0},{r:'l',gs:1,ga:0},{r:'w',gs:1,ga:0}],
+    note: "前日に会社のフットサル。左の腿裏と左腰が少し痛い", injury: "左腿裏・左腰 軽度"
+  },
+  {
+    id: 224, date: "2024-06-30", label: "2面8チーム 曇り",
+    wins: 5, draws: 1, losses: 0, goals: 3, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "右の膝に違和感も他は強い痛みなし", injury: "右膝 違和感"
+  },
+  {
+    id: 225, date: "2024-07-07", label: "2面7チーム 晴れ",
+    wins: 5, draws: 3, losses: 0, goals: 8, assists: 0,
+    matches: [{r:'d',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:3,ga:0},{r:'d',gs:0,ga:0}],
+    note: "右脛の痛みくらいで他は痛みなし。脱力が大事。蹴る時だけチカラ入れる", injury: "右脛 軽度"
+  },
+  {
+    id: 226, date: "2024-07-14", label: "2面5チーム 雨",
+    wins: 5, draws: 1, losses: 3, goals: 4, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 227, date: "2024-07-20", label: "2面8チーム 酷暑",
+    wins: 4, draws: 0, losses: 2, goals: 8, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'l',gs:1,ga:0},{r:'l',gs:1,ga:0}],
+    note: "腰や足の痛みはなし。運動量が少ないと大丈夫な模様", injury: ""
+  },
+  {
+    id: 228, date: "2024-07-28", label: "夜",
+    wins: 0, draws: 0, losses: 0, goals: 0, assists: 0,
+    matches: [],
+    note: "特に痛みはなし。足を締め付ける靴下はNG", injury: ""
+  },
+  {
+    id: 229, date: "2024-08-04", label: "2面6チーム 夏日",
+    wins: 3, draws: 3, losses: 2, goals: 14, assists: 0,
+    matches: [{r:'w',gs:3,ga:0},{r:'d',gs:2,ga:0},{r:'d',gs:3,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'d',gs:1,ga:0}],
+    note: "後半疲れて右足薬指が痛い（感覚無くなる）", injury: "右足薬指 しびれ・痛み"
+  },
+  {
+    id: 230, date: "2024-08-11", label: "2面6チーム 夏日",
+    wins: 4, draws: 4, losses: 0, goals: 5, assists: 0,
+    matches: [{r:'d',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:1,ga:0}],
+    note: "左の腿裏の張り。前の日から", injury: "左腿裏 張り"
+  },
+  {
+    id: 231, date: "2024-08-18", label: "2面5チーム",
+    wins: 7, draws: 1, losses: 1, goals: 5, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:2,ga:0}],
+    note: "左太ももの裏の張り。お尻をほぐすと多少ましに", injury: "左腿裏 張り"
+  },
+  {
+    id: 232, date: "2024-08-31", label: "MFP味スタ 1面3チーム",
+    wins: 0, draws: 0, losses: 0, goals: 0, assists: 0,
+    matches: [],
+    note: "MFP味スタ", injury: ""
+  },
+  {
+    id: 233, date: "2024-09-08", label: "2面7チーム",
+    wins: 7, draws: 0, losses: 1, goals: 8, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:1,ga:0}],
+    note: "左の腿裏が張る、最後は攣りそうにも", injury: "左腿裏 張り・攣り気味"
+  },
+  {
+    id: 234, date: "2024-09-15", label: "2面8チーム",
+    wins: 3, draws: 2, losses: 1, goals: 1, assists: 0,
+    matches: [{r:'d',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0}],
+    note: "左の腿裏の張りは軽減。お尻がやや張る", injury: "左腿裏 軽減 / お尻 張り"
+  },
+  {
+    id: 235, date: "2024-09-22", label: "1面4チーム",
+    wins: 5, draws: 0, losses: 1, goals: 4, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0}],
+    note: "左の腿裏は開始から張りあり。揉んでるとよくなるが張りが続くのは変わらず", injury: "左腿裏 張り 継続"
+  },
+  {
+    id: 236, date: "2024-09-29", label: "2面8チーム",
+    wins: 5, draws: 1, losses: 0, goals: 4, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0}],
+    note: "腰とお尻のケアにより太ももの張りは軽", injury: "左腿裏 改善傾向"
+  },
+  {
+    id: 237, date: "2024-10-05", label: "1面3チーム 雨",
+    wins: 3, draws: 2, losses: 2, goals: 4, assists: 0,
+    matches: [{r:'d',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 238, date: "2024-10-14", label: "モレリア個サル",
+    wins: 1, draws: 1, losses: 4, goals: 1, assists: 0,
+    matches: [{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0}],
+    note: "運動会後で足が筋肉痛", injury: "両足 筋肉痛"
+  },
+  {
+    id: 239, date: "2024-10-20", label: "2面8チーム 曇り強風",
+    wins: 4, draws: 1, losses: 1, goals: 2, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0}],
+    note: "腿裏の張りはなし。右の薬指骨が前日から痛い", injury: "右足薬指 痛み"
+  },
+  {
+    id: 240, date: "2024-10-27", label: "2面8チーム",
+    wins: 4, draws: 1, losses: 1, goals: 3, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:1,ga:0}],
+    note: "左腿の裏張りはあるが軽度。そうくん負傷", injury: "左腿裏 軽度"
+  },
+  {
+    id: 241, date: "2024-11-03", label: "1面4チーム 晴れ",
+    wins: 6, draws: 1, losses: 1, goals: 5, assists: 0,
+    matches: [{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "左お尻の横と左膝裏の張り。お尻横をほぐしたら良くなった。右ふくらはぎに少し張りと痛み", injury: "左臀部横・左膝裏 / 右ふくらはぎ 軽度"
+  },
+  {
+    id: 242, date: "2024-11-10", label: "2面8チーム 晴れ",
+    wins: 5, draws: 1, losses: 0, goals: 6, assists: 0,
+    matches: [{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0}],
+    note: "左膝裏の張りあるがプレー中は気にならない程度。右足アキレス腱が重い", injury: "左膝裏 / 右アキレス腱 張り"
+  },
+  {
+    id: 243, date: "2024-11-17", label: "2面8チーム 晴れ",
+    wins: 3, draws: 2, losses: 1, goals: 9, assists: 0,
+    matches: [{r:'w',gs:1,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:4,ga:0},{r:'l',gs:1,ga:0},{r:'d',gs:1,ga:0},{r:'d',gs:2,ga:0}],
+    note: "大きな痛みはなし。股関節へのケアと臀部ケアが大事", injury: ""
+  },
+  {
+    id: 244, date: "2024-11-24", label: "晴れ",
+    wins: 3, draws: 2, losses: 1, goals: 1, assists: 0,
+    matches: [{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0}],
+    note: "サンダルが合わず右足脛横が痛い", injury: "右脛横 痛み（サンダル起因）"
+  },
+  {
+    id: 245, date: "2024-12-08", label: "",
+    wins: 6, draws: 1, losses: 1, goals: 9, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:1,ga:0},{r:'w',gs:2,ga:0},{r:'d',gs:0,ga:0}],
+    note: "2週間ぶりで左膝の横が痛い。右すね横のサンダル痛もあり", injury: "左膝横 / 右すね横 痛み"
+  },
+  {
+    id: 246, date: "2024-12-14", label: "3面8チーム",
+    wins: 4, draws: 2, losses: 3, goals: 7, assists: 0,
+    matches: [{r:'w',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'l',gs:0,ga:0},{r:'d',gs:1,ga:0},{r:'w',gs:1,ga:0},{r:'l',gs:0,ga:0},{r:'w',gs:5,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 247, date: "2024-12-22", label: "2面8チーム",
+    wins: 4, draws: 2, losses: 0, goals: 7, assists: 0,
+    matches: [{r:'w',gs:2,ga:0},{r:'w',gs:1,ga:0},{r:'d',gs:0,ga:0},{r:'d',gs:0,ga:0},{r:'w',gs:3,ga:0},{r:'w',gs:1,ga:0}],
+    note: "", injury: ""
+  },
+  {
+    id: 248, date: "2024-12-28", label: "2面8チーム 蹴り納め",
+    wins: 4, draws: 0, losses: 2, goals: 5, assists: 0,
+    matches: [{r:'w',gs:3,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:0,ga:0},{r:'w',gs:2,ga:0},{r:'l',gs:0,ga:0},{r:'l',gs:0,ga:0}],
+    note: "2試合目の味方がクソすぎて不完全燃焼。パスミスがひどいのと判断が遅い", injury: ""
+  }
+];
+
+const DATA_VERSION = '2026-06-07-v1';
+
+// Load from storage or use initData
+let sessions = [];
+try {
+  const savedVersion = localStorage.getItem('futsal_data_version');
+  const saved = localStorage.getItem('futsal_sessions');
+  if (saved && savedVersion === DATA_VERSION) {
+    sessions = JSON.parse(saved);
+  } else {
+    sessions = [...initData];
+    localStorage.setItem('futsal_sessions', JSON.stringify(sessions));
+    localStorage.setItem('futsal_data_version', DATA_VERSION);
+  }
+} catch(e) { sessions = [...initData]; }
+
+function save() {
+  try {
+    localStorage.setItem('futsal_sessions', JSON.stringify(sessions));
+    localStorage.setItem('futsal_data_version', DATA_VERSION);
+  } catch(e) {}
+}
+
+// ─── TAB SWITCH ──────────────────────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['overview','sessions','add','analysis','data'][i] === id);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if (id === 'overview') renderOverview();
+  if (id === 'sessions') renderSessions();
+  if (id === 'analysis') renderAnalysis();
+  if (id === 'data') { showStorageData(); updateBackupStatus(); }
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function totalGames(s) { return s.wins + s.draws + s.losses; }
+function winRate(s) {
+  const t = totalGames(s);
+  return t ? ((s.wins + s.draws * 0.5) / t * 100).toFixed(0) : 0;
+}
+function fmtDate(d) {
+  const dt = new Date(d + 'T00:00:00');
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth()+1).padStart(2,'0');
+  const day = String(dt.getDate()).padStart(2,'0');
+  return y + '/' + m + '/' + day;
+}
+const resultLabel = {w:'W', d:'D', l:'L'};
+const resultClass = {w:'win', d:'draw', l:'loss'};
+
+// ─── OVERVIEW ────────────────────────────────────────────────────────────────
+function renderOverview() {
+  const valid = sessions.filter(s => totalGames(s) > 0);
+  const totW = sessions.reduce((a,s)=>a+s.wins,0);
+  const totD = sessions.reduce((a,s)=>a+s.draws,0);
+  const totL = sessions.reduce((a,s)=>a+s.losses,0);
+  const totG = sessions.reduce((a,s)=>a+s.goals,0);
+  const totA = sessions.reduce((a,s)=>a+s.assists,0);
+  const totGames = totW+totD+totL;
+  const totSessions = sessions.length;
+
+  // Top stats
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="label">Sessions</div><div class="value">${totSessions}</div><div class="sub">total days</div></div>
+    <div class="stat-card green"><div class="label">Wins</div><div class="value">${totW}</div><div class="sub">of ${totGames} games</div></div>
+    <div class="stat-card orange"><div class="label">Draws</div><div class="value">${totD}</div></div>
+    <div class="stat-card red"><div class="label">Losses</div><div class="value">${totL}</div></div>
+    <div class="stat-card"><div class="label">Goals</div><div class="value">${totG}</div><div class="sub">avg ${(totG/totSessions).toFixed(1)}/session</div></div>
+    <div class="stat-card green"><div class="label">Assists</div><div class="value">${totA}</div><div class="sub">avg ${(totA/totSessions).toFixed(1)}/session</div></div>
+    <div class="stat-card orange"><div class="label">Win Rate</div><div class="value">${totGames ? ((totW+totD*0.5)/totGames*100).toFixed(0) : 0}<span style="font-size:20px">%</span></div></div>
+    <div class="stat-card"><div class="label">G+A</div><div class="value">${totG+totA}</div><div class="sub">total contributions</div></div>
+  `;
+
+  // Win rate bar
+  const wPct = totGames ? (totW/totGames*100).toFixed(1) : 0;
+  const dPct = totGames ? (totD/totGames*100).toFixed(1) : 0;
+  const lPct = totGames ? (totL/totGames*100).toFixed(1) : 0;
+  document.getElementById('winrate-section').innerHTML = `
+    <div class="winrate-label">Season Win/Draw/Loss Distribution</div>
+    <div class="winrate-bar">
+      <div class="bar-win" style="width:${wPct}%"></div>
+      <div class="bar-draw" style="width:${dPct}%"></div>
+      <div class="bar-loss" style="width:${lPct}%"></div>
+    </div>
+    <div class="winrate-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--win)"></div>${wPct}% Win</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--draw)"></div>${dPct}% Draw</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--loss)"></div>${lPct}% Loss</div>
+    </div>
+  `;
+
+  // Goals per session bar chart
+  const maxG = Math.max(...valid.map(s=>s.goals), 1);
+  let bars = valid.map(s=>`
+    <div class="bar-col" style="height:${(s.goals/maxG*54)+4}px" title="${fmtDate(s.date)}: ${s.goals}G">
+      <div class="tooltip">${fmtDate(s.date)}<br>${s.goals} goals</div>
+    </div>
+  `).join('');
+  document.getElementById('overview-chart').innerHTML = `
+    <div class="analysis-card">
+      <h3>Goals Per Session</h3>
+      <div class="mini-chart">${bars}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:8px;letter-spacing:0.1em">
+        ${valid.map(s=>`<span style="display:inline-block;min-width:${100/valid.length}%;text-align:center;opacity:0.5">${fmtDate(s.date)}</span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function buildMatchTable(rows, totalG, totalA) {
+  var th = '<th style="font-family:monospace;font-size:9px;color:#5a6070;font-weight:400;text-align:left;padding:0 8px 6px 0">';
+  var header = '<tr style="border-bottom:1px solid #242830">'
+    + th + '#</th>'
+    + th + '結果</th>'
+    + th + 'SCORE</th>'
+    + th + 'G</th>'
+    + th + 'A</th>'
+    + '</tr>';
+  var tfoot = '';
+  if (totalG != null && totalA != null) {
+    var gColor = totalG > 0 ? '#44f4a0' : '#5a6070';
+    var aColor = totalA > 0 ? '#44f4a0' : '#5a6070';
+    var tdTotal = 'font-family:monospace;font-size:11px;font-weight:bold;padding:6px 8px 2px 0;border-top:1px solid #242830';
+    tfoot = '<tfoot><tr>'
+      + '<td style="' + tdTotal + ';color:#5a6070"></td>'
+      + '<td style="' + tdTotal + ';color:#5a6070">TOTAL</td>'
+      + '<td style="' + tdTotal + ';color:#5a6070"></td>'
+      + '<td style="' + tdTotal + ';color:' + gColor + '">' + totalG + '</td>'
+      + '<td style="' + tdTotal + ';color:' + aColor + '">' + totalA + '</td>'
+      + '</tr></tfoot>';
+  }
+  return '<table style="width:100%;border-collapse:collapse;margin-top:10px">'
+    + '<thead>' + header + '</thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + tfoot
+    + '</table>';
+}
+
+// ─── SESSIONS LIST ───────────────────────────────────────────────────────────
+function renderSessions() {
+  const sorted = [...sessions].sort((a,b) => b.date.localeCompare(a.date));
+  document.getElementById('sessions-list').innerHTML = sorted.map(s => {
+    const hasMatches = s.matches && s.matches.length > 0;
+
+    // Build per-match table rows
+    const matchTableRows = hasMatches ? s.matches.map((m, i) => {
+      // Pre-compute all values outside template literal to avoid nested expression issues
+      const resLabel = m.r === 'w' ? 'W' : m.r === 'd' ? 'D' : 'L';
+      const resColor = m.r === 'w' ? '#44f4a0' : m.r === 'd' ? '#f4c444' : '#f46044';
+      const hasScore = m.gs > 0 || m.ga > 0;
+      const scoreStr = hasScore ? (m.gs + '–' + m.ga) : '–';
+      const hasMyg = m.myg != null;
+      const hasMya = m.mya != null;
+      const mygVal = hasMyg ? m.myg : null;
+      const myaVal = hasMya ? m.mya : null;
+      const mygStr = mygVal !== null ? String(mygVal) : '–';
+      const myaStr = myaVal !== null ? String(myaVal) : '–';
+      const mygColor = (mygVal > 0) ? '#44f4a0' : '#5a6070';
+      const myaColor = (myaVal > 0) ? '#44f4a0' : '#5a6070';
+      const numStyle = 'color:#5a6070;font-size:10px;padding:4px 6px 4px 0;font-family:monospace';
+      const resStyle = 'padding:4px 8px 4px 0';
+      const scoreStyle = 'font-family:monospace;font-size:12px;padding:4px 8px 4px 0';
+      const mygStyle = 'font-family:monospace;font-size:12px;padding:4px 8px 4px 0;color:' + mygColor;
+      const myaStyle = 'font-family:monospace;font-size:12px;padding:4px 0;color:' + myaColor;
+      return '<tr>'
+        + '<td style="' + numStyle + '">#' + (i+1) + '</td>'
+        + '<td style="' + resStyle + '"><span style="font-family:sans-serif;font-size:13px;font-weight:bold;color:' + resColor + '">' + resLabel + '</span></td>'
+        + '<td style="' + scoreStyle + '">' + scoreStr + '</td>'
+        + '<td style="' + mygStyle + '">' + mygStr + '</td>'
+        + '<td style="' + myaStyle + '">' + myaStr + '</td>'
+        + '</tr>';
+    }).join('') : '';
+
+    const hasInjury = s.injury && !s.injury.includes('回復');
+
+    return `
+    <div class="session-card" data-id="${s.id}" onclick="toggleSession(${s.id})">
+      <div class="session-header">
+        <div class="session-date">${fmtDate(s.date)}</div>
+        <div class="session-pills">
+          ${s.label ? `<span class="pill">${s.label}</span>` : ''}
+          ${s.wins ? `<span class="pill win">${s.wins}W</span>` : ''}
+          ${s.draws ? `<span class="pill draw">${s.draws}D</span>` : ''}
+          ${s.losses ? `<span class="pill loss">${s.losses}L</span>` : ''}
+          ${s.goals ? `<span class="pill" style="border-color:#888;color:#fff">G${s.goals}</span>` : ''}
+          ${s.assists ? `<span class="pill" style="border-color:#888;color:#fff">A${s.assists}</span>` : ''}
+          ${hasInjury ? '<span style="color:var(--accent3);font-size:10px;padding:3px 6px;border:1px solid var(--accent3);border-radius:2px">⚠</span>' : ''}
+        </div>
+        <div class="session-meta">
+        </div>
+      </div>
+      <div class="session-detail" id="detail-${s.id}">
+        ${hasInjury ? `<div class="injury-badge">⚠ ${s.injury}</div>` : ''}
+        ${s.note ? `<div class="session-note">${s.note}</div>` : ''}
+        ${matchTableRows ? buildMatchTable(matchTableRows, s.goals || 0, s.assists || 0) : ''}
+        <button onclick="event.stopPropagation();openEditModal(${s.id})" style="margin-top:14px;background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;padding:6px 14px;cursor:pointer;letter-spacing:0.1em">✎ EDIT</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSession(id) {
+  const card = document.querySelector(`.session-card[data-id="${id}"]`);
+  if (card) card.classList.toggle('expanded');
+}
+
+// ─── ADD SESSION ─────────────────────────────────────────────────────────────
+let matchRows = [{r:'w', gs:0, ga:0, myg:0, mya:0}];
+
+function addMatchRow() {
+  matchRows.push({r:'w', gs:0, ga:0, myg:0, mya:0});
+  renderMatchRows();
+}
+function removeMatchRow(i) {
+  matchRows.splice(i, 1);
+  renderMatchRows();
+}
+function renderMatchRows() {
+  const header = `<div class="match-header-row">
+    <span></span><span>結果</span><span>SCORE</span><span>G</span><span>A</span><span></span>
+  </div>`;
+  document.getElementById('match-rows').innerHTML = header + matchRows.map((m,i) => `
+    <div class="match-row">
+      <span class="match-num">#${i+1}</span>
+      <select onchange="matchRows[${i}].r=this.value">
+        <option value="w" ${m.r==='w'?'selected':''}>WIN</option>
+        <option value="d" ${m.r==='d'?'selected':''}>DRAW</option>
+        <option value="l" ${m.r==='l'?'selected':''}>LOSS</option>
+      </select>
+      <div class="match-cell">
+        <input type="number" min="0" max="20" value="${m.gs}" oninput="matchRows[${i}].gs=+this.value">
+        <span class="score-sep">–</span>
+        <input type="number" min="0" max="20" value="${m.ga}" oninput="matchRows[${i}].ga=+this.value">
+      </div>
+      <div class="match-cell">
+        <input type="number" min="0" max="20" value="${m.myg||0}" oninput="matchRows[${i}].myg=+this.value">
+      </div>
+      <div class="match-cell">
+        <input type="number" min="0" max="20" value="${m.mya||0}" oninput="matchRows[${i}].mya=+this.value">
+      </div>
+      <button class="btn-remove-match" onclick="removeMatchRow(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function submitSession() {
+  const date = document.getElementById('inp-date').value;
+  if (!date) { alert('日付を入力してください'); return; }
+  const label = document.getElementById('inp-label').value;
+  const note = document.getElementById('inp-note').value;
+  const wins = matchRows.filter(m=>m.r==='w').length;
+  const draws = matchRows.filter(m=>m.r==='d').length;
+  const losses = matchRows.filter(m=>m.r==='l').length;
+  const goals = matchRows.reduce((a,m)=>a+(m.myg||0), 0);
+  const assists = matchRows.reduce((a,m)=>a+(m.mya||0), 0);
+
+  // Simple injury detection
+  let injury = '';
+  const noteL = note.toLowerCase();
+  if (noteL.includes('膝')) injury = '膝 ';
+  if (noteL.includes('腿') || noteL.includes('太もも')) injury += '腿 ';
+  if (noteL.includes('股関節')) injury += '股関節 ';
+  if (noteL.includes('痛')) injury += '痛み';
+  if (noteL.includes('緩和') || noteL.includes('回復') || noteL.includes('なし')) injury = '回復';
+
+  const newS = {
+    id: Date.now(),
+    date, label, wins, draws, losses, goals, assists,
+    matches: [...matchRows],
+    note, injury
+  };
+  sessions.push(newS);
+  sessions.sort((a,b) => a.date.localeCompare(b.date));
+  save();
+
+  document.getElementById('save-msg').style.display = 'block';
+  setTimeout(() => document.getElementById('save-msg').style.display = 'none', 2500);
+  matchRows = [{r:'w', gs:0, ga:0, myg:0, mya:0}];
+  renderMatchRows();
+  document.getElementById('inp-date').value = '';
+  document.getElementById('inp-label').value = '';
+  document.getElementById('inp-note').value = '';
+}
+
+// ─── ANALYSIS ────────────────────────────────────────────────────────────────
+let analysisFilter = { type: 'all', value: null };
+
+function getFilteredSessions() {
+  const valid = sessions.filter(s => totalGames(s) > 0);
+  if (analysisFilter.type === 'year') {
+    return valid.filter(s => s.date.startsWith(analysisFilter.value));
+  }
+  if (analysisFilter.type === 'month') {
+    return valid.filter(s => s.date.startsWith(analysisFilter.value));
+  }
+  return valid;
+}
+
+function setFilter(type, value) {
+  analysisFilter = { type, value };
+  renderAnalysis();
+}
+
+function renderAnalysis() {
+  const valid = sessions.filter(s => totalGames(s) > 0);
+
+  // Build year/month options
+  const years = [...new Set(valid.map(s => s.date.slice(0,4)))].sort().reverse();
+  const months = [...new Set(valid.map(s => s.date.slice(0,7)))].sort().reverse();
+
+  const filtered = getFilteredSessions();
+  const last3 = filtered.slice(-3);
+  const first3 = filtered.slice(0, 3);
+
+  const sumGoals = (arr) => arr.reduce((a,s)=>a+s.goals,0);
+  const sumWins  = (arr) => arr.reduce((a,s)=>a+s.wins,0);
+  const sumDraws = (arr) => arr.reduce((a,s)=>a+s.draws,0);
+  const sumLosses= (arr) => arr.reduce((a,s)=>a+s.losses,0);
+  const avgGoals = (arr) => arr.length ? (sumGoals(arr)/arr.length).toFixed(1) : 0;
+  const avgAssists = (arr) => arr.length ? (arr.reduce((a,s)=>a+s.assists,0)/arr.length).toFixed(1) : 0;
+  const avgWR = (arr) => {
+    if (!arr.length) return 0;
+    const t = arr.reduce((a,s)=>a+totalGames(s),0);
+    const w = arr.reduce((a,s)=>a+s.wins+s.draws*0.5,0);
+    return t ? (w/t*100).toFixed(0) : 0;
+  };
+
+  const totG = filtered.reduce((a,s)=>a+s.goals,0);
+  const totW = sumWins(filtered), totD = sumDraws(filtered), totL = sumLosses(filtered);
+  const totGames = totW+totD+totL;
+
+  const best = [...filtered].sort((a,b) => (b.goals+b.assists)-(a.goals+a.assists))[0];
+
+  const injuryEvents = filtered.filter(s=>s.injury).map(s => ({
+    date: fmtDate(s.date),
+    injury: s.injury,
+    ok: s.injury === '回復'
+  }));
+
+  const maxG = Math.max(...filtered.map(s=>s.goals), 1);
+  const trendRows = filtered.map(s => `
+    <div class="trend-row">
+      <div class="trend-date">${fmtDate(s.date)}</div>
+      <div class="trend-bar-wrap">
+        <div class="trend-bar-bg">
+          <div class="trend-bar-fill" style="width:${(s.goals/maxG*100)}%"></div>
+        </div>
+      </div>
+      <div class="trend-value">${s.goals}G / ${s.assists}A</div>
+    </div>
+  `).join('');
+
+  // Monthly aggregation (for current filter scope)
+  const monthMap = {};
+  filtered.forEach(s => {
+    const ym = s.date.slice(0,7);
+    if (!monthMap[ym]) monthMap[ym] = {sessions:0,goals:0,wins:0,draws:0,losses:0,games:0};
+    monthMap[ym].sessions++;
+    monthMap[ym].goals += s.goals;
+    monthMap[ym].wins += s.wins;
+    monthMap[ym].draws += s.draws;
+    monthMap[ym].losses += s.losses;
+    monthMap[ym].games += totalGames(s);
+  });
+  const monthRows = Object.entries(monthMap).sort((a,b)=>a[0].localeCompare(b[0])).map(([ym,d])=>{
+    const wr = d.games ? ((d.wins+d.draws*0.5)/d.games*100).toFixed(0) : 0;
+    const [y,m] = ym.split('-');
+    return `<div class="trend-row">
+      <div class="trend-date" style="min-width:70px">${y}/${m}</div>
+      <div class="trend-bar-wrap">
+        <div class="trend-bar-bg"><div class="trend-bar-fill" style="width:${wr}%"></div></div>
+      </div>
+      <div class="trend-value" style="min-width:110px;font-size:10px">${d.wins}W ${d.draws}D ${d.losses}L &nbsp;${d.goals}G</div>
+    </div>`;
+  }).join('');
+
+  // Filter label
+  let filterLabel = 'ALL TIME';
+  if (analysisFilter.type === 'year') filterLabel = analysisFilter.value + '年';
+  if (analysisFilter.type === 'month') {
+    const [y,m] = analysisFilter.value.split('-');
+    filterLabel = y + '/' + m;
+  }
+
+  // Advice
+  const recentInjuries = filtered.slice(-3).filter(s => s.injury && !s.injury.includes('回復'));
+  let adviceParts = [];
+  if (recentInjuries.length > 0) {
+    const latestInj = recentInjuries[recentInjuries.length-1].injury;
+    adviceParts.push(`直近の記録に<strong>${latestInj}</strong>があります。プレー前後のウォームアップ・クールダウンを丁寧に行い、違和感があれば即座に中止してください。`);
+  }
+  if (+avgWR(last3) > +avgWR(first3)) {
+    adviceParts.push(`勝率が期間序盤より改善傾向です。`);
+  }
+  if (+avgGoals(last3) > +avgGoals(first3)) {
+    adviceParts.push(`得点は序盤 avg <strong>${avgGoals(first3)}</strong> → 直近 avg <strong>${avgGoals(last3)}</strong> と上昇傾向です。`);
+  } else {
+    adviceParts.push(`得点は直近やや落ち着いています。怪我の影響やコンディションを確認しましょう。`);
+  }
+  if (!adviceParts.length) adviceParts.push('データが少ないため詳細な分析ができません。');
+
+  document.getElementById('analysis-content').innerHTML = `
+    <!-- FILTER UI -->
+    <div class="analysis-card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.12em">FILTER</span>
+        <button onclick="setFilter('all',null)" style="font-family:'DM Mono',monospace;font-size:10px;padding:4px 10px;border:1px solid ${analysisFilter.type==='all'?'#fff':'var(--border)'};color:${analysisFilter.type==='all'?'#fff':'var(--muted)'};background:none;cursor:pointer">ALL</button>
+        ${years.map(y=>`<button onclick="setFilter('year','${y}')" style="font-family:'DM Mono',monospace;font-size:10px;padding:4px 10px;border:1px solid ${analysisFilter.value===y?'#fff':'var(--border)'};color:${analysisFilter.value===y?'#fff':'var(--muted)'};background:none;cursor:pointer">${y}</button>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        ${months.map(ym=>{
+          const [y,m]=ym.split('-');
+          const active = analysisFilter.value===ym;
+          return `<button onclick="setFilter('month','${ym}')" style="font-family:'DM Mono',monospace;font-size:9px;padding:3px 8px;border:1px solid ${active?'var(--accent2)':'var(--border)'};color:${active?'var(--accent2)':'var(--muted)'};background:none;cursor:pointer">${y}/${m}</button>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- SUMMARY STATS for filter -->
+    <div class="analysis-card">
+      <h3>${filterLabel} — Summary</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        <div style="text-align:center">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--win)">${totW}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">WINS</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--draw)">${totD}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">DRAWS</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--loss)">${totL}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">LOSSES</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--accent)">${totG}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">GOALS</div>
+        </div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${filtered.length} sessions &nbsp;·&nbsp; ${totGames} games &nbsp;·&nbsp; win rate ${totGames?((totW+totD*0.5)/totGames*100).toFixed(0):0}%</div>
+    </div>
+
+    <!-- MONTHLY BREAKDOWN -->
+    <div class="analysis-card">
+      <h3>Monthly Breakdown</h3>
+      ${monthRows || '<div style="color:var(--muted);font-size:12px">データなし</div>'}
+    </div>
+
+    <!-- GOAL TREND -->
+    <div class="analysis-card">
+      <h3>Goal / Assist Trend</h3>
+      ${trendRows || '<div style="color:var(--muted);font-size:12px">データなし</div>'}
+    </div>
+
+    <!-- BEST SESSION -->
+    <div class="analysis-card">
+      <h3>Best Session</h3>
+      ${best ? `
+        <div style="display:flex;align-items:center;gap:20px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text)">${fmtDate(best.date)}</div>
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text)">${best.wins}W ${best.draws}D ${best.losses}L</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--win)">${best.goals}G ${best.assists}A</div>
+            ${best.label ? `<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)">${best.label}</div>` : ''}
+          </div>
+        </div>
+      ` : '<div style="color:var(--muted);font-size:12px">データなし</div>'}
+    </div>
+
+    <!-- INJURY TIMELINE -->
+    <div class="analysis-card">
+      <h3>Injury Timeline</h3>
+      <div class="injury-timeline">
+        ${injuryEvents.length ? injuryEvents.map(e=>`
+          <div class="injury-event ${e.ok?'ok':''}">
+            <div class="injury-date">${e.date}</div>
+            <div class="injury-desc">${e.injury}</div>
+          </div>
+        `).join('') : '<div style="color:var(--muted);font-size:12px">怪我記録なし</div>'}
+      </div>
+    </div>
+
+    <!-- AI ADVICE -->
+    <div class="advice-section">
+      <div class="advice-bubble">
+        <div class="advice-text">
+          ${adviceParts.map(p=>`<p style="margin-bottom:10px">${p}</p>`).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
+
+// ─── DATA MANAGEMENT ─────────────────────────────────────────────────────────
+function showStorageData() {
+  try {
+    var raw = localStorage.getItem('futsal_sessions');
+    var ta = document.getElementById('data-view');
+    var st = document.getElementById('data-status');
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      ta.value = JSON.stringify(parsed, null, 2);
+      st.textContent = '✓ ' + parsed.length + ' セッション / ' + raw.length + ' bytes';
+      st.style.color = 'var(--accent2)';
+    } else {
+      ta.value = '';
+      st.textContent = 'LocalStorageにデータがありません（initDataを使用中）';
+      st.style.color = 'var(--draw)';
+      // Show initData instead
+      ta.value = JSON.stringify(sessions, null, 2);
+    }
+  } catch(e) {
+    document.getElementById('data-status').textContent = 'エラー: ' + e.message;
+  }
+}
+
+function copyStorageData() {
+  try {
+    var text = JSON.stringify(sessions, null, 2);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        var st = document.getElementById('data-status');
+        st.textContent = '✓ クリップボードにコピーしました（' + sessions.length + ' セッション）';
+        st.style.color = 'var(--accent2)';
+      });
+    } else {
+      var ta = document.getElementById('data-view');
+      ta.value = text;
+      ta.select();
+      document.execCommand('copy');
+      var st = document.getElementById('data-status');
+      st.textContent = '✓ コピーしました';
+      st.style.color = 'var(--accent2)';
+    }
+  } catch(e) {
+    document.getElementById('data-status').textContent = 'エラー: ' + e.message;
+  }
+}
+
+function exportData() {
+  try {
+    var text = JSON.stringify(sessions, null, 2);
+    var blob = new Blob([text], {type: 'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'futsal-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    // Record backup time
+    localStorage.setItem('futsal_last_backup', new Date().toISOString());
+    var st = document.getElementById('data-status');
+    if (st) { st.textContent = '✓ ダウンロードしました'; st.style.color = 'var(--accent2)'; }
+    updateBackupStatus();
+  } catch(e) {
+    var st = document.getElementById('data-status');
+    if (st) st.textContent = 'エラー: ' + e.message;
+  }
+}
+
+function updateBackupStatus() {
+  var dot = document.getElementById('backup-dot');
+  var statusEl = document.getElementById('backup-status');
+  var infoEl = document.getElementById('backup-info');
+  var lastBackup = localStorage.getItem('futsal_last_backup');
+  var sessionCount = sessions.length;
+  var now = new Date();
+
+  var statusText, dotClass, infoHtml;
+
+  if (!lastBackup) {
+    statusText = 'バックアップ未実施';
+    dotClass = 'warn';
+    infoHtml = '⚠ まだバックアップがありません。DATAタブ → DOWNLOAD でJSONファイルを保存してください。';
+  } else {
+    var last = new Date(lastBackup);
+    var diffDays = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+    var dateStr = last.getFullYear() + '/' + String(last.getMonth()+1).padStart(2,'0') + '/' + String(last.getDate()).padStart(2,'0');
+    if (diffDays === 0) {
+      statusText = '本日バックアップ済';
+      dotClass = 'ok';
+      infoHtml = '✓ 最終バックアップ: ' + dateStr + '（本日）<br>' + sessionCount + ' セッション保存済';
+    } else if (diffDays <= 7) {
+      statusText = diffDays + '日前にバックアップ';
+      dotClass = 'ok';
+      infoHtml = '最終バックアップ: ' + dateStr + '（' + diffDays + '日前）<br>' + sessionCount + ' セッション保存済';
+    } else {
+      statusText = diffDays + '日間バックアップなし';
+      dotClass = 'warn';
+      infoHtml = '⚠ 最終バックアップ: ' + dateStr + '（' + diffDays + '日前）<br>定期的にDOWNLOADボタンでバックアップしてください。';
+    }
+  }
+
+  if (dot) { dot.className = 'backup-dot ' + dotClass; }
+  if (statusEl) { statusEl.textContent = statusText; }
+  if (infoEl) { infoEl.innerHTML = infoHtml; }
+}
+
+function importData() {
+  try {
+    var text = document.getElementById('data-import').value.trim();
+    if (!text) { alert('JSONを貼り付けてください'); return; }
+    var parsed = JSON.parse(text);
+    if (!Array.isArray(parsed)) { alert('データ形式が正しくありません'); return; }
+    if (!confirm(parsed.length + ' セッションを復元します。現在のデータは上書きされます。よろしいですか？')) return;
+    sessions = parsed;
+    save();
+    document.getElementById('data-status').textContent = '✓ ' + parsed.length + ' セッションを復元しました';
+    document.getElementById('data-status').style.color = 'var(--accent2)';
+    document.getElementById('data-import').value = '';
+    renderOverview();
+  } catch(e) {
+    document.getElementById('data-status').textContent = 'JSONエラー: ' + e.message;
+    document.getElementById('data-status').style.color = 'var(--accent3)';
+  }
+}
+
+// ─── EDIT MODAL ──────────────────────────────────────────────────────────────
+let editSessionId = null;
+let editMatchRows = [];
+
+function openEditModal(id) {
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  editSessionId = id;
+  editMatchRows = s.matches ? s.matches.map(m => ({
+    r: m.r || 'w',
+    gs: m.gs || 0,
+    ga: m.ga || 0,
+    myg: m.myg != null ? m.myg : 0,
+    mya: m.mya != null ? m.mya : 0
+  })) : [];
+  document.getElementById('edit-date').value = s.date;
+  document.getElementById('edit-label').value = s.label || '';
+  document.getElementById('edit-note').value = s.note || '';
+  document.getElementById('edit-goals').value = s.goals || 0;
+  document.getElementById('edit-assists').value = s.assists || 0;
+  renderEditMatchRows();
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+  editSessionId = null;
+}
+
+function addEditMatchRow() {
+  editMatchRows.push({r:'w', gs:0, ga:0, myg:0, mya:0});
+  renderEditMatchRows();
+}
+function removeEditMatchRow(i) {
+  editMatchRows.splice(i, 1);
+  renderEditMatchRows();
+}
+
+function renderEditMatchRows() {
+  document.getElementById('edit-match-rows').innerHTML = editMatchRows.map((m,i) => `
+    <div class="match-row">
+      <span class="match-num">#${i+1}</span>
+      <select onchange="editMatchRows[${i}].r=this.value">
+        <option value="w" ${m.r==='w'?'selected':''}>WIN</option>
+        <option value="d" ${m.r==='d'?'selected':''}>DRAW</option>
+        <option value="l" ${m.r==='l'?'selected':''}>LOSS</option>
+      </select>
+      <div class="match-cell">
+        <input type="number" min="0" max="20" value="${m.gs||0}" oninput="editMatchRows[${i}].gs=+this.value">
+        <span class="score-sep">–</span>
+        <input type="number" min="0" max="20" value="${m.ga||0}" oninput="editMatchRows[${i}].ga=+this.value">
+      </div>
+      <div class="match-cell">
+        <input type="number" min="0" max="20" value="${m.myg||0}" oninput="editMatchRows[${i}].myg=+this.value">
+      </div>
+      <div class="match-cell">
+        <input type="number" min="0" max="20" value="${m.mya||0}" oninput="editMatchRows[${i}].mya=+this.value">
+      </div>
+      <button class="btn-remove-match" onclick="removeEditMatchRow(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function saveEdit() {
+  const idx = sessions.findIndex(x => x.id === editSessionId);
+  if (idx === -1) return;
+  const s = sessions[idx];
+  s.date  = document.getElementById('edit-date').value || s.date;
+  s.label = document.getElementById('edit-label').value;
+  s.note  = document.getElementById('edit-note').value;
+  s.matches = [...editMatchRows];
+  s.wins   = editMatchRows.filter(m=>m.r==='w').length;
+  s.draws  = editMatchRows.filter(m=>m.r==='d').length;
+  s.losses = editMatchRows.filter(m=>m.r==='l').length;
+  const sumMyg = editMatchRows.reduce((a,m)=>a+(m.myg||0),0);
+  const sumMya = editMatchRows.reduce((a,m)=>a+(m.mya||0),0);
+  // Only overwrite totals if user actually entered per-match G/A data
+  const hasPerMatchGA = editMatchRows.some(m=>m.myg>0||m.mya>0);
+  const manualGoals   = parseInt(document.getElementById('edit-goals').value) || 0;
+  const manualAssists = parseInt(document.getElementById('edit-assists').value) || 0;
+  if (hasPerMatchGA) {
+    s.goals   = sumMyg;
+    s.assists = sumMya;
+  } else {
+    s.goals   = manualGoals;
+    s.assists = manualAssists;
+  }
+  // injury auto-detect
+  const noteL = s.note.toLowerCase();
+  let inj = '';
+  if (noteL.includes('膝')) inj += '膝 ';
+  if (noteL.includes('腿') || noteL.includes('太もも')) inj += '腿 ';
+  if (noteL.includes('股関節')) inj += '股関節 ';
+  if (noteL.includes('痛')) inj += '痛み';
+  if (noteL.includes('緩和') || noteL.includes('回復') || noteL.includes('なし')) inj = '回復';
+  if (inj) s.injury = inj.trim();
+  sessions.sort((a,b) => a.date.localeCompare(b.date));
+  save();
+  closeEditModal();
+  renderSessions();
+}
+
+function deleteSession() {
+  if (!confirm('このセッションを削除しますか？')) return;
+  sessions = sessions.filter(x => x.id !== editSessionId);
+  save();
+  closeEditModal();
+  renderSessions();
+}
+
+// Close modal on overlay click
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+// Set today's date in form
+updateBackupStatus();
+document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+renderMatchRows();
+renderOverview();
+</script>
+
+</body>
+</html>
